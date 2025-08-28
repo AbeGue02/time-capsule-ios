@@ -10,74 +10,112 @@ import CoreData
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @State private var showingCreateCapsule = false
 
     @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
+        sortDescriptors: [NSSortDescriptor(keyPath: \TimeCapsule.createdDate, ascending: false)],
         animation: .default)
-    private var items: FetchedResults<Item>
+    private var timeCapsules: FetchedResults<TimeCapsule>
 
     var body: some View {
         NavigationView {
             List {
-                ForEach(items) { item in
+                ForEach(timeCapsules) { capsule in
                     NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
+                        TimeCapsuleDetailView(timeCapsule: capsule)
                     } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+                        TimeCapsuleRowView(timeCapsule: capsule)
                     }
                 }
-                .onDelete(perform: deleteItems)
+                .onDelete(perform: deleteCapsules)
             }
+            .navigationTitle("Time Capsules")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
                 }
                 ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                    Button(action: { showingCreateCapsule = true }) {
+                        Label("Create Time Capsule", systemImage: "plus")
                     }
                 }
             }
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            .sheet(isPresented: $showingCreateCapsule) {
+                CreateTimeCapsuleView()
+            }
+            
+            if timeCapsules.isEmpty {
+                VStack {
+                    Image(systemName: "archivebox")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                    Text("No Time Capsules")
+                        .font(.title2)
+                        .foregroundColor(.gray)
+                    Text("Create your first time capsule to get started")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                Text("Select a time capsule")
+                    .foregroundColor(.secondary)
             }
         }
     }
 
-    private func deleteItems(offsets: IndexSet) {
+    private func deleteCapsules(offsets: IndexSet) {
         withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
+            offsets.map { timeCapsules[$0] }.forEach(viewContext.delete)
 
             do {
                 try viewContext.save()
             } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
                 let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+                print("Failed to delete time capsule: \(nsError.localizedDescription)")
             }
         }
     }
 }
 
-private let itemFormatter: DateFormatter = {
+struct TimeCapsuleRowView: View {
+    let timeCapsule: TimeCapsule
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(timeCapsule.name ?? "Untitled Capsule")
+                .font(.headline)
+            
+            HStack {
+                if isUnlocked {
+                    Label("Unlocked", systemImage: "lock.open")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                } else {
+                    Label("Locked until \(timeCapsule.openDate ?? Date(), formatter: dateFormatter)", systemImage: "lock")
+                        .foregroundColor(.orange)
+                        .font(.caption)
+                }
+                
+                Spacer()
+                
+                Text("\(timeCapsule.contents?.count ?? 0) items")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+    
+    private var isUnlocked: Bool {
+        guard let openDate = timeCapsule.openDate else { return false }
+        return Date() >= openDate
+    }
+}
+
+private let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .short
     return formatter
 }()
 

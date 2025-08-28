@@ -1,0 +1,43 @@
+# Xcode
+*.xcuserdata/
+*.xcuserdatad/
+*.xcschemes/
+DerivedData/
+.DS_Store
+*.swp
+*.lock
+profile
+*.moved-aside
+
+# Build generated
+build/
+DerivedData/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# IDE specific
+.vscode/
+.idea/
+
+# iOS Simulator
+*.log
+
+# App Icons and Launch Images
+*.mobileprovision
